@@ -1,0 +1,82 @@
+---
+title: "MAFtools_WXS"
+output: html_document
+date: "2022-12-09"
+---
+
+```{r}
+library(maftools)
+```
+
+1. VCFs to MAFs  (vcf2maf) -- Brandon gave me these 
+2. Keep MAfs in one folder 
+3. Merge MAfs to a single MAF (merge_mafs)
+4. Do the standard analysis 
+5. Can only do comparisons of 2 time points at a time with mafCompare. I want the beginning and end time point 
+
+This is going to start a general trend of what is happening across all samples as well as some surface level info.
+This is ONLY WXS
+
+```{r}
+mafs <- list.files("~/Desktop/ovarian_cancer_somatic_variants_mafs/WXS/", full.names= TRUE)
+anoikis_maf <- merge_mafs(mafs)
+```
+
+```{r}
+#Shows sample summary.
+save_mutation_type <- getSampleSummary(anoikis_maf)
+write.csv(save_mutation_type, "~/Desktop/wxs_anoikis_ov90_mutations.csv")
+save_mutation_type
+```
+
+
+```{r}
+#Shows gene summary.
+getGeneSummary(anoikis_maf)
+```
+
+
+```{r}
+#Shows all fields in MAF
+getFields(anoikis_maf)
+```
+
+```{r}
+plotmafSummary(maf = anoikis_maf, rmOutlier = TRUE, addStat = 'median', dashboard = TRUE, titvRaw = FALSE)
+```
+
+```{r}
+laml.titv = titv(maf = anoikis_maf, plot = FALSE, useSyn = TRUE)
+#plot titv summary
+plotTiTv(res = laml.titv)
+```
+
+```{r}
+laml.sig = oncodrive(maf = anoikis_maf, AACol = 'HGVSp_Short', minMut = 5, pvalMethod = 'zscore')
+```
+
+```{r}
+plotOncodrive(res = laml.sig, fdrCutOff = 0.1, useFraction = TRUE, labelSize = 0.5)
+```
+
+
+Changed the columns to include time points manually, so we are going to export the CSV back in and then make a graph
+```{r}
+anoikis_wxs <- read.csv("~/Desktop/wxs_anoikis_ov90_mutations.csv")
+```
+
+```{r}
+library(tidyr)
+anoikis_wxs_2 <- anoikis_wxs %>%
+  pivot_longer(cols= c(Frame_Shift_Del, Frame_Shift_Ins, In_Frame_Del,In_Frame_Ins,Missense_Mutation, Nonsense_Mutation, Nonstop_Mutation, Splice_Site, Translation_Start_Site), names_to = "Mutation", values_to= "counts")
+```
+
+
+```{r}
+library(ggplot2)
+```
+
+```{r}
+ggplot(anoikis_wxs_2, aes(x = Tumor_Sample_Barcode, y = counts, color= Mutation)) + geom_point() 
+```
+
